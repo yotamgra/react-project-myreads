@@ -1,31 +1,29 @@
 import { useState, useEffect } from "react";
 import { update } from "../../BooksAPI";
+import { BooksContext } from "../../BooksContext";
+import { useContext } from "react";
 
-const Book = ({ book, readingLists, setReadingLists }) => {
+const Book = ({ book }) => {
+  const { readingLists, setReadingLists } = useContext(BooksContext);
+
   const title = book.title;
   const url = book.imageLinks?.thumbnail;
   const authors = book.authors?.join(", ");
   const [chooseShelf, setChooseSelf] = useState("none");
 
   useEffect(() => {
-    updateChooseSelf();
+    updateChooseSelf(); // checking if book exist in one of the lists - if so, update chooslist variable
   });
 
   const updateChooseSelf = () => {
-    if (
-      readingLists.currentlyReading.find(
-        (bookInList) => bookInList.id === book.id
-      )
-    ) {
-      setChooseSelf("currentlyReading");
-    } else if (
-      readingLists.wantToRead.find((bookInList) => bookInList.id === book.id)
-    ) {
-      setChooseSelf("wantToRead");
-    } else if (
-      readingLists.read.find((bookInList) => bookInList.id === book.id)
-    ) {
-      setChooseSelf("read");
+    for (const list in readingLists) {
+      readingLists[list].find((bookInList) => {
+        if (bookInList.id === book.id) {
+          setChooseSelf(list);
+          return true;
+        }
+        return false;
+      });
     }
   };
 
@@ -45,37 +43,21 @@ const Book = ({ book, readingLists, setReadingLists }) => {
   };
 
   const setInShelf = (e) => {
-    setChooseSelf(e.target.value);
+    //in this point book exist in list, or in the search results
 
-    if (
-      readingLists.currentlyReading.find((bookInList, index) => {
+    if (chooseShelf !== "none") {
+      //in this point book exist in list and I need to remove the book from the list
+      readingLists[chooseShelf].find((bookInList, index) => {
         if (bookInList.id === book.id) {
-          setReadingLists(deleteFromList("currentlyReading", index));
+          setReadingLists(deleteFromList(chooseShelf, index));
           return true;
         }
         return false;
-      })
-    ) {
-    } else if (
-      readingLists.wantToRead.find((bookInList, index) => {
-        if (bookInList.id === book.id) {
-          setReadingLists(deleteFromList("wantToRead", index));
-          return true;
-        }
-        return false;
-      })
-    ) {
-    } else if (
-      readingLists.read.find((bookInList, index) => {
-        if (bookInList.id === book.id) {
-          setReadingLists(deleteFromList("read", index));
-          return true;
-        }
-        return false;
-      })
-    ) {
+      });
     }
-    setReadingLists(pushToList(e.target.value));
+    setChooseSelf(e.target.value); //update chooseShelf variable to the choosen shelf
+
+    setReadingLists(pushToList(e.target.value)); // push the book to the new list and update readingLists
   };
 
   return (
